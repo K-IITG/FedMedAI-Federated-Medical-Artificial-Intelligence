@@ -1,0 +1,2 @@
+"""Hospital node components."""
+

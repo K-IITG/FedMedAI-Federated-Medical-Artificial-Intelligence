@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FedMedAI Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      #charts { display: flex; gap: 24px; flex-wrap: wrap; }
+      canvas { max-width: 480px; }
+    </style>
+  </head>
+  <body>
+    <h1>FedMedAI — Federated Training Metrics</h1>
+    <p>Polling aggregator metrics every 3s.</p>
+    <div id="charts">
+      <canvas id="accChart"></canvas>
+      <canvas id="lossChart"></canvas>
+    </div>
+    <script>
+      const accCtx = document.getElementById('accChart').getContext('2d');
+      const lossCtx = document.getElementById('lossChart').getContext('2d');
+
+      const accChart = new Chart(accCtx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Accuracy', data: [], borderColor: '#2d6cdf' }]},
+        options: { scales: { y: { min: 0, max: 1 }}}
+      });
+
+      const lossChart = new Chart(lossCtx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Loss', data: [], borderColor: '#d9480f' }]},
+      });
+
+      async function fetchMetrics() {
+        try {
+          const res = await fetch('/api/metrics');
+          const data = await res.json();
+          const rounds = data.metrics.map((m) => m.round ?? data.round);
+          const acc = data.metrics.map((m) => m.acc ?? m.accuracy ?? 0);
+          const loss = data.metrics.map((m) => m.loss ?? 0);
+
+          accChart.data.labels = rounds;
+          accChart.data.datasets[0].data = acc;
+          lossChart.data.labels = rounds;
+          lossChart.data.datasets[0].data = loss;
+          accChart.update();
+          lossChart.update();
+        } catch (err) {
+          console.error('Failed to fetch metrics', err);
+        }
+      }
+
+      fetchMetrics();
+      setInterval(fetchMetrics, 3000);
+    </script>
+  </body>
+</html>
+
